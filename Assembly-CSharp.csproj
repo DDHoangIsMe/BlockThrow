@@ -67,10 +67,13 @@
     <Compile Include="Assets\Scripts\Abstracts\AbstractStackBlock.cs" />
     <Compile Include="Assets\Scripts\Abstracts\IGameObject.cs" />
     <Compile Include="Assets\Scripts\Objects\BoardManage.cs" />
+    <Compile Include="Assets\Scripts\Abstracts\IMoveObject.cs" />
+    <Compile Include="Assets\Scripts\Abstracts\IDragableObject.cs" />
     <Compile Include="Assets\Scripts\Objects\Block.cs" />
     <Compile Include="Assets\Scripts\Tools\UIControl.cs" />
     <Compile Include="Assets\Scripts\Tools\PoolManage.cs" />
     <Compile Include="Assets\Scripts\Objects\Obstacle.cs" />
+    <Compile Include="Assets\Scripts\Tools\DragHandler.cs" />
     <Compile Include="Assets\Scripts\Objects\StackBlock.cs" />
     <Compile Include="Assets\Scripts\Objects\StackBlockShooter.cs" />
     <Compile Include="Assets\Scripts\ConstData.cs" />

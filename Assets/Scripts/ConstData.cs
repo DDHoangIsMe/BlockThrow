@@ -1,5 +1,4 @@
 using System;
-using Unity.Mathematics;
 using UnityEngine;
 
 public static class ConstData
@@ -9,8 +8,13 @@ public static class ConstData
     public const int ROW_BLOCKS = 5;
     public const int COL_BLOCKS = 5;
     public const int MERGE_WAIT_TIME = 1;
+    public const float SHOOTER_SIZE = 1f;
+    public const float BLOCK_SPEED = 10f;
+    public const float DEFAULT_SPEED = 5f;
+    public const float INTENSE_DISTANCE = 0.25f;
+    public const float OFF_SET = 0.01f;
     public static readonly float SCREEN_HEIGHT = Camera.main.orthographicSize * 2;
     public static readonly float SCREEN_WIDTH = SCREEN_HEIGHT * Screen.width / Screen.height;
-    public static readonly float UNIT_DISTANCE = Math.Min(SCREEN_WIDTH / ROW_BLOCKS, SCREEN_HEIGHT / (2 * COL_BLOCKS)) * 0.9f; 
-    public static readonly float SCALE = UNIT_DISTANCE / 20;
+    public static readonly float UNIT_DISTANCE = Math.Min(SCREEN_WIDTH / ROW_BLOCKS, SCREEN_HEIGHT / (2 * COL_BLOCKS)); 
+    public static readonly float GASP_BLOCK = UNIT_DISTANCE / 20;
 }

@@ -16,6 +16,8 @@ enum GamePlayState
 
 public class BoardManage : MonoBehaviour
 {
+    [SerializeField]
+    private StackBlockShooter stackBlockShooter;
     private GamePlayState gamePlayState = GamePlayState.Idle;
     private StackBlock[,] stackBlocks;
     private int[] shootAblePlaces = new int[ConstData.ROW_BLOCKS];
@@ -24,25 +26,29 @@ public class BoardManage : MonoBehaviour
     {
         stackBlocks = new StackBlock[ConstData.ROW_BLOCKS, ConstData.COL_BLOCKS];
         GenerateNewBoard();
+        if (stackBlockShooter == null)
+        {
+            stackBlockShooter = transform.parent.Find(typeof(StackBlockShooter).Name).GetComponent<StackBlockShooter>();
+        }
     }
 
     public void GenerateNewBoard()
     {
         for (int i = 0; i < ConstData.ROW_BLOCKS; i++)
         {
-            stackBlocks[i, 0] = new GameObject().AddComponent<StackBlock>();
-        }
-        for (int i = 0; i < ConstData.ROW_BLOCKS; i++)
-        {
-            for (int j = 1; j < ConstData.COL_BLOCKS; j++)
+            for (int j = 0; j < ConstData.COL_BLOCKS; j++)
             {
                 stackBlocks[i, j] = new GameObject().AddComponent<StackBlock>();
                 stackBlocks[i, j].transform.parent = transform;
                 // Set position the board 
                 stackBlocks[i, j].transform.position = new Vector3(
-                    ((ConstData.ROW_BLOCKS - 1) / 2 - i) * ConstData.UNIT_DISTANCE, 
-                    ((ConstData.COL_BLOCKS - 1) / 2 - j) * ConstData.UNIT_DISTANCE
+                    (i - (float)(ConstData.ROW_BLOCKS - 1) / 2) * ConstData.UNIT_DISTANCE, 
+                    (j - (float)(ConstData.COL_BLOCKS - 1) / 2) * ConstData.UNIT_DISTANCE
                 );
+                if (j == 0)
+                {
+                    continue;
+                }
                 //randomize block amount
                 // Todo: Don't use random, use game play data
                 stackBlocks[i, j].SpawnBlock(Random.Range(ConstData.MIN_BLOCKS, ConstData.MAX_BLOCKS));
@@ -171,5 +177,20 @@ public class BoardManage : MonoBehaviour
                 stackBlocks[i, j].DespawnBlock();
             }
         }
+    }
+
+    public bool CheckClearBoard()
+    {
+        for (int i = 0; i < ConstData.ROW_BLOCKS; i++)
+        {
+            for (int j = 0; j < ConstData.COL_BLOCKS; j++)
+            {
+                if (stackBlocks[i, j].GetTotalBlocks() > 0)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

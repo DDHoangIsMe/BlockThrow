@@ -88,12 +88,4 @@ public class StackBlock : AbstractStackBlock
             }
         }
     }
-
-    public void OrderBlocks() {
-        for (int i = 0; i < blocks.Count; i++)
-        {
-            //Todo: Animation ordering blocks
-            blocks[i].transform.position = transform.position + Vector3.up * i * ConstData.UNIT_DISTANCE;
-        }
-    }
 }

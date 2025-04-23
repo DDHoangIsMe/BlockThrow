@@ -13,7 +13,6 @@ public class ObjectControl : MonoBehaviour
     public void GetTypeObj<T>() where T : IGameObject
     {
         objectType = typeof(T);
-        Debug.Log(objectType.Name);
         modelObject = Resources.Load<GameObject>("Prefabs/Prefab" + objectType.Name);
     }
 

@@ -31,5 +31,14 @@ public abstract class AbstractStackBlock : MonoBehaviour
             // block.transform.parent = this.transform;
             blocks.Add(block);
         }
+        OrderBlocks();
+    }
+
+    public virtual void OrderBlocks() {
+        for (int i = 0; i < blocks.Count; i++)
+        {
+            //Todo: Animation ordering blocks
+            blocks[i].transform.position = transform.position + Vector3.up * i * ConstData.GASP_BLOCK;
+        }
     }
 }
