@@ -5,15 +5,15 @@ using UnityEngine;
 public abstract class AbstractStackBlock : MonoBehaviour
 {
     // Current color state of the block
-    private BlockColor colorType;
+    private BlockColor _colorType;
     public BlockColor ColorType
     {
-        get { return colorType; }
+        get { return _colorType; }
         protected set { 
-            colorType = value; 
+            _colorType = value; 
             foreach (var block in blocks)
             {
-                block.GetComponent<Block>().SetBlockColor(colorType); // Set the color of each block
+                block.GetComponent<Block>().SetBlockColor(_colorType); // Set the color of each block
             }
         }
     }
@@ -40,5 +40,10 @@ public abstract class AbstractStackBlock : MonoBehaviour
             //Todo: Animation ordering blocks
             blocks[i].transform.position = transform.position + Vector3.up * i * ConstData.GASP_BLOCK;
         }
+    }
+
+    public List<GameObject> GetBlocks() 
+    {
+        return blocks;
     }
 }

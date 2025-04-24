@@ -1,19 +1,26 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.VisualScripting.Dependencies.NCalc;
 
 public class StackBlockShooter : AbstractStackBlock, IDragableObject
 {
-    private Vector3 previousPos;
+    private Vector3 _previousPos;
+    private bool _isDragable = false;
+
+    public delegate void ChangePosCallback();
+    public delegate GamePlayState ShootStackCallback(float posX);
+    public ChangePosCallback changePosCallback;
+    public ShootStackCallback shootStackCallback;
+
     void Start()
     {
-        previousPos = transform.position;
-        SpawnBlock(Random.Range(ConstData.MIN_BLOCKS, ConstData.MAX_BLOCKS));
-        ColorType = (BlockColor)Random.Range(0, System.Enum.GetValues(typeof(BlockColor)).Length);
+        _previousPos = transform.position;
     }
 
     void Update()
     {
-        if (transform.position != previousPos)
+        //On shooter base move
+        if (transform.position != _previousPos)
         {
             for (int i = 0; i < blocks.Count; i++) 
             {
@@ -23,8 +30,27 @@ public class StackBlockShooter : AbstractStackBlock, IDragableObject
                     ConstData.DEFAULT_SPEED * (blocks.Count - i)
                 );
             }
-            previousPos = transform.position;
+            _previousPos = transform.position;
+            changePosCallback?.Invoke();
         }
+    }
+
+    public void SetUpWithBoard(ChangePosCallback changePosCallback, ShootStackCallback shootStackCallback)
+    {
+        this.changePosCallback = changePosCallback;
+        this.shootStackCallback = shootStackCallback;
+    }
+
+    public void ReloadShooter()
+    {
+        SpawnBlock(Random.Range(ConstData.MIN_BLOCKS, ConstData.MAX_BLOCKS));
+        ColorType = (BlockColor)Random.Range(0, System.Enum.GetValues(typeof(BlockColor)).Length);
+        _isDragable = true;
+    }
+
+    public bool IsDragable()
+    {
+        return _isDragable;
     }
 
     public override void DespawnBlock()
@@ -36,23 +62,13 @@ public class StackBlockShooter : AbstractStackBlock, IDragableObject
         }
     }
 
-    public List<GameObject> GetBlocks()
-    {
-        return blocks;
-    }
-
     public void ActionEndDrag()
     {
         //Todo: Check status of the game
-        //Todo: Check shootable place on board
-        //Todo: Check current shooter point to
-        //Todo: Place the shooter to the grid 
-        //Todo: Action shoot to board and change State
-        //Todo: Send callback to board for finish
-    }
-
-    public void ResponseFinishShoot()
-    {
-        
+        if (shootStackCallback?.Invoke(transform.position.x) != GamePlayState.Idle)
+        {
+            return;
+        }
+        _isDragable = false;
     }
 }

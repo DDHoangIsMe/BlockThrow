@@ -72,11 +72,14 @@
     <Compile Include="Assets\Scripts\Objects\Block.cs" />
     <Compile Include="Assets\Scripts\Tools\UIControl.cs" />
     <Compile Include="Assets\Scripts\Tools\PoolManage.cs" />
+    <Compile Include="Assets\Scripts\Objects\ShootPlaceHolder.cs" />
     <Compile Include="Assets\Scripts\Objects\Obstacle.cs" />
     <Compile Include="Assets\Scripts\Tools\DragHandler.cs" />
     <Compile Include="Assets\Scripts\Objects\StackBlock.cs" />
     <Compile Include="Assets\Scripts\Objects\StackBlockShooter.cs" />
     <Compile Include="Assets\Scripts\ConstData.cs" />
+    <Compile Include="Assets\Scripts\Tools\GameManager.cs" />
+    <Compile Include="Assets\Scripts\Abstracts\TweenHolder.cs" />
     <Compile Include="Assets\Scripts\Tools\Singleton.cs" />
     <Compile Include="Assets\Scripts\Tools\ObjectControl.cs" />
   </ItemGroup>

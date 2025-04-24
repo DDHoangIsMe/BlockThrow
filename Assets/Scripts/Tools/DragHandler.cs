@@ -19,15 +19,22 @@ public class DragHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IEn
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (RectTransformUtility.RectangleContainsScreenPoint(invisiblePanel, eventData.position, mainCamera))
+        if (!targetObject.GetComponent<StackBlockShooter>().IsDragable())
+        {
+            return;
+        }
+        else
         {
             targetObject.GetComponent<StackBlockShooter>().ActionEndDrag();
         }
-
     }
 
     private void MoveObject(PointerEventData eventData)
     {
+        if (!targetObject.GetComponent<StackBlockShooter>().IsDragable())
+        {
+            return;
+        }
         Vector2 localPoint;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(invisiblePanel, eventData.position, mainCamera, out localPoint))
         {
@@ -37,7 +44,6 @@ public class DragHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IEn
             float rangePanel = (ConstData.SCREEN_WIDTH - ConstData.SHOOTER_SIZE) / 2;
             worldPoint.x = Mathf.Clamp(worldPoint.x, -rangePanel, rangePanel);
             targetObject.position = new Vector3(worldPoint.x, targetObject.position.y, targetObject.position.z);
-            Debug.Log(rangePanel);
         }
 
     }

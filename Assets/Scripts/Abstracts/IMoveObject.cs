@@ -2,12 +2,12 @@ using UnityEngine;
 
 interface IMoveObject
 {
-    public void MoveStraight(Vector3 target, float speed);
+    public void MoveStraight(Vector3 target, float speed, System.Action callback);
 }
 
 interface IMoveWithCurve
 {
-    public void MoveTo(Vector3 target, float intense, float duration, bool isAnimation);
+    public void MoveCurve(Vector3 target, float intense, float duration, bool isAnimation);
 }
 
 interface IMoveWithPassOver

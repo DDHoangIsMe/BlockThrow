@@ -23,33 +23,33 @@ public class StackBlock : AbstractStackBlock
         }
     }
 
-    public void MoveToOtherStack(StackBlock block, bool curveAnimate = false)
+    public void MoveToOtherStack(StackBlock block, System.Action callback, float speed)
     {
-        if (curveAnimate)
+        for (int i = 0; i < blocks.Count; i++) 
         {
-            //Todo: Show animation to move the block
+            Vector3 tagetPos = block.transform.position + Vector3.up * ConstData.GASP_BLOCK * (block.GetBlocks().Count + i);
+            blocks[i].GetComponent<Block>().MoveStraight(tagetPos, speed, callback);
         }
-        else
-        {
-            //Todo: Show animation with curve
-        }
-
         // Change in the data
         block.AddBlock(this);
     }
 
-    public void AddBlock(StackBlock block)
+    public void MoveToOtherStack(StackBlock block, float intense, float time)
     {
-        // Pushed from other stack
-        ColorType = block.ColorType;
-        blocks.AddRange(block.GetBlocks());
-        block.DespawnBlock();
+        for (int i = 0; i < blocks.Count; i++) 
+        {
+            Vector3 tagetPos = block.transform.position + Vector3.up * ConstData.GASP_BLOCK * (block.GetBlocks().Count + i);
+            blocks[i].GetComponent<Block>().MoveCurve(tagetPos, intense, time);
+        }
+        block.AddBlock(this);
     }
 
-    public void AddBlock(StackBlockShooter block)
+    public void AddBlock<T>(T block) where T : AbstractStackBlock
     {
-        // Pushed from shooter
-        blocks = new List<GameObject>(block.GetBlocks());
+        // Pushed from other stack
+        blocks.AddRange(block.GetBlocks());
+        ColorType = block.ColorType;
+        block.DespawnBlock();
     }
 
     public void ChangeColor(BlockColor color) 
@@ -67,11 +67,6 @@ public class StackBlock : AbstractStackBlock
         return ColorType;
     }
 
-    public List<GameObject> GetBlocks()
-    {
-        return blocks;
-    }
-
     public void ActionAfterMerge()
     {
         // Check if the stack is full to score
@@ -86,6 +81,20 @@ public class StackBlock : AbstractStackBlock
                 blocks[blocks.Count - 1].SetActive(false);
                 blocks.RemoveAt(blocks.Count - 1);
             }
+        }
+    }
+
+    public void GetPoint()
+    {
+        if (blocks.Count >= 10)
+        {
+            int keepBlock = blocks.Count % 10;
+            UIControl.Instance.AddScore(blocks.Count - keepBlock);
+            for (int i = keepBlock; i < blocks.Count; i++)
+            {
+                blocks[i].SetActive(false);
+            }
+            blocks = blocks.GetRange(0, keepBlock);
         }
     }
 }

@@ -8,12 +8,12 @@ public class ObjectControl : MonoBehaviour
     public Type objectType;
     public List<GameObject> gameObjects = new List<GameObject>();
 
-    private GameObject modelObject;
+    private GameObject _modelObject;
 
     public void GetTypeObj<T>() where T : IGameObject
     {
         objectType = typeof(T);
-        modelObject = Resources.Load<GameObject>("Prefabs/Prefab" + objectType.Name);
+        _modelObject = Resources.Load<GameObject>("Prefabs/Prefab" + objectType.Name);
     }
 
     public GameObject GetObject()
@@ -31,7 +31,7 @@ public class ObjectControl : MonoBehaviour
 
     private GameObject GenerateObject() 
     {
-        GameObject obj = Instantiate(modelObject);
+        GameObject obj = Instantiate(_modelObject);
         // obj.AddComponent(objectType);
         obj.transform.parent = transform;
         obj.SetActive(true);

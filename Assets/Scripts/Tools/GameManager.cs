@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Obstacle : MonoBehaviour, IGameObject
+public class GameManager : MonoBehaviour
 {
     // Start is called before the first frame update
     void Start()
@@ -14,16 +14,5 @@ public class Obstacle : MonoBehaviour, IGameObject
     void Update()
     {
         
-    }
-
-    public void OnCreateObject()
-    {
-        // Initialize the obstacle object here
-        Debug.Log("Obstacle created!");
-    }
-
-    public void DeactiveCoroutine()
-    {
-        //
     }
 }
