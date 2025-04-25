@@ -1,12 +1,22 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Properties;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class StackBlock : AbstractStackBlock
 {
     [SerializeField]
     private TextMeshProUGUI _textCount;
+
+#region Block
+    protected override void OnAwake()
+    {
+        _textCount.transform.SetParent(GameObject.Find("CanvasWorld").transform);
+    }
+
     public override void DespawnBlock()
     {
         List<GameObject> tempList = GetListObject<Block>();
@@ -14,6 +24,31 @@ public class StackBlock : AbstractStackBlock
         {
             tempList.RemoveAll(x => true);
         }
+    }
+
+    // Add more block from param
+    public override void AddBlock<T>(T block)
+    {
+        // Pushed to this from other stack
+        GetListObject<Block>().AddRange(block.GetListObject<Block>());
+        ColorType = block.ColorType;
+        UpdateStackUI();
+
+        //Change other Stack
+        block.DespawnBlock();
+        block.UpdateStackUI();
+    }
+
+    public override void OrderBlocks()
+    {
+        base.OrderBlocks();
+        _textCount.text = GetTotalBlocks().ToString();
+    }
+
+    public void SetTransform(Vector3 location)
+    {
+        transform.position = location;
+        _textCount.transform.position = location;
     }
 
     public void MoveToOtherStack(StackBlock block, float speed, System.Action callback)
@@ -57,21 +92,7 @@ public class StackBlock : AbstractStackBlock
         callBack();
     }
 
-    // Add more block from param
-    public override void AddBlock<T>(T block)
-    {
-        // Pushed from other stack
-        GetListObject<Block>().AddRange(block.GetListObject<Block>());
-        ColorType = block.ColorType;
-        block.DespawnBlock();
-    }
-
-    public override void OrderBlocks()
-    {
-        base.OrderBlocks();
-        _textCount.text = GetTotalBlocks().ToString();
-    }
-
+    //Get attribute
     public void ChangeColor(BlockColor color) 
     {
         ColorType = color;
@@ -87,34 +108,43 @@ public class StackBlock : AbstractStackBlock
         return ColorType;
     }
 
-    // public void ActionAfterMerge()
-    // {
-    //     // Check if the stack is full to score
-    //     while (GetTotalBlocks() >= ConstData.MAX_BLOCKS)
-    //     {
-    //         UIControl.Instance.AddScore(ConstData.MAX_BLOCKS);
-    //         for (int i = 0; i < ConstData.MAX_BLOCKS; i++)
-    //         {
-    //             // Todo: Show animation score
-                
-    //             // Destroy the block
-    //             GetListObject<Block>()[GetTotalBlocks() - 1].SetActive(false);
-    //             GetListObject<Block>().RemoveAt(GetTotalBlocks() - 1);
-    //         }
-    //     }
-    // }
-
-    public void GetPoint()
+    public void GainPoint()
     {
-        if (GetTotalBlocks() >= 10)
+        int blockCount = GetTotalBlocks();
+        if (blockCount >= 10)
         {
-            int keepBlock = GetTotalBlocks() % 10;
-            UIControl.Instance.AddScore(GetTotalBlocks() - keepBlock);
-            for (int i = keepBlock; i < GetTotalBlocks(); i++)
+            int keepBlock = blockCount % 10;
+            UIControl.Instance.AddScore(blockCount - keepBlock);
+            for (int i = keepBlock; i < blockCount; i++)
             {
                 GetListObject<Block>()[i].SetActive(false);
             }
-            GetListObject<Block>().RemoveRange(0, keepBlock);
+            GetListObject<Block>().RemoveRange(keepBlock, blockCount - keepBlock);
+
+            UpdateStackUI();
         }
     }
+
+    public override void UpdateStackUI()
+    {
+        int blockCount = GetTotalBlocks();
+        _textCount.gameObject.SetActive(blockCount > 0);
+        _textCount.text = blockCount.ToString();
+    }
+#endregion
+
+#region Special Obj
+    public bool CheckContainObstacle()
+    {
+        return GetListObject<Obstacle>().Count > 0;
+    }
+
+    public void SetBlockLayer(int level)
+    {
+        foreach (GameObject item in GetListObject<Block>())
+        {
+            item.GetComponent<Block>().SetLayer(level);
+        }
+    }
+#endregion
 }

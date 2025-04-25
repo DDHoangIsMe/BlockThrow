@@ -12,6 +12,9 @@ public static class ConstData
     public const int COL_BLOCKS = 5;
     public const float MERGE_WAIT_TIME = 0.8f;
     public const int REST_WAIT_TIME = 0;
+    public const int MOVE_BLOCK_LAYER = 2;
+    public const int BLOCK_LAYER = 1;
+
     public const float SHOOTER_SIZE = 1f;
     public const float BLOCK_SPEED = 10f;
     public const float DEFAULT_SPEED = 5f;

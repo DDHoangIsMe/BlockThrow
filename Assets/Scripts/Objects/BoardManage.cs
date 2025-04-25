@@ -55,20 +55,28 @@ public class BoardManage : MonoBehaviour
                 stackBlocks[i, j].transform.parent = transform;
 
                 // Set position the board 
-                stackBlocks[i, j].transform.position = GetGridPosition(i, j);
+                stackBlocks[i, j].SetTransform(GetGridPosition(i, j));
                 if (j == 0)
                 {
                     continue;
                 }
-                
+#if UNITY_EDITOR
+                //Todo: Remove this testzone
+                if (j == 2 && i % 2 == 0)
+                {
+                    stackBlocks[i, j].SpawnObject<Obstacle>();
+                    stackBlocks[i, j].GetListObject<Obstacle>()[0].transform.position = stackBlocks[i, j].transform.position;
+                    continue;
+                }
+#endif
                 //randomize block amount
                 // Todo: Don't use random, use game play data
-                stackBlocks[i, j].SpawnBlock(UnityEngine.Random.Range(ConstData.MIN_BLOCKS, ConstData.MAX_BLOCKS));
+                int amount = UnityEngine.Random.Range(ConstData.MIN_BLOCKS, ConstData.MAX_BLOCKS);
 
                 //Randomize block color
-                stackBlocks[i, j].ChangeColor(
-                    (BlockColor)UnityEngine.Random.Range(0, System.Enum.GetValues(typeof(BlockColor)).Length)
-                );
+                BlockColor color = (BlockColor)UnityEngine.Random.Range(0, System.Enum.GetValues(typeof(BlockColor)).Length);
+                
+                stackBlocks[i, j].SpawnBlock(amount, color);
             }
         }
     }
@@ -91,7 +99,8 @@ public class BoardManage : MonoBehaviour
                     //Todo: execute error 
                     throw new System.Exception("Error: board out of range");
                 }
-                else if (stackBlocks[i, j].GetTotalBlocks() == 0)
+                else if(stackBlocks[i, j].GetTotalBlocks() == 0 && 
+                        !stackBlocks[i, j].CheckContainObstacle())
                 {
                     _shootAblePlaces[i] = j;
                 }
@@ -227,7 +236,7 @@ public class BoardManage : MonoBehaviour
         _processingActionNumber--;
         if (!isMerge)
         {
-            stackBlocks[col, row].GetPoint();
+            stackBlocks[col, row].GainPoint();
         }
     }
 
@@ -235,32 +244,42 @@ public class BoardManage : MonoBehaviour
     public void PushColumn()
     {
         int order = 0;
+        //Looking for empty Stack
         for (int i = 0; i < ConstData.COL_BLOCKS; i++)
         {
-            if (stackBlocks[_currentShoot, i].GetListObject<Block>().Count == 0)
+            if (stackBlocks[_currentShoot, i].GetTotalBlocks() == 0 &&
+                !stackBlocks[_currentShoot, i].CheckContainObstacle())
             {
                 break;
             }
             order = i;
         }
+
+        //Move stacks up
         for (int i = order; i >= 0; i--)
         {
-            //Start 1 action
-            _processingActionNumber += stackBlocks[_currentShoot, i].GetListObject<Block>().Count;
+            StackBlock tempStackOrg = stackBlocks[_currentShoot, i];
+            if (tempStackOrg.CheckContainObstacle())
+            {
+                continue;
+            }
+            //Start action process
+            _processingActionNumber += tempStackOrg.GetTotalBlocks();
             
-            if (i + 1 == ConstData.COL_BLOCKS)
+            StackBlock tempStackTarget = GetStackToPush(_currentShoot, i);
+            if (tempStackTarget == null)
             {
                 //Animation
-                stackBlocks[_currentShoot, i].MoveOutOfBoard(ConstData.BLOCK_SPEED, FinishProcess);
+                tempStackOrg.MoveOutOfBoard(ConstData.BLOCK_SPEED, FinishProcess);
                 //Data change
-                stackBlocks[_currentShoot, i].DespawnBlock();
+                tempStackOrg.DespawnBlock();
             }
             else
             {
                 //Animation
-                stackBlocks[_currentShoot, i].MoveToOtherStack(stackBlocks[_currentShoot, i + 1], ConstData.BLOCK_SPEED, FinishProcess);
+                tempStackOrg.MoveToOtherStack(tempStackTarget, ConstData.BLOCK_SPEED, FinishProcess);
                 //Data change
-                stackBlocks[_currentShoot, i + 1].AddBlock(stackBlocks[_currentShoot, i]);
+                tempStackTarget.AddBlock(tempStackOrg);
             }
         }
     }
@@ -288,22 +307,36 @@ public class BoardManage : MonoBehaviour
     public GamePlayState CheckClearBoard()
     {
         MarkShootablePlace();
-        if (!_shootAblePlaces.Any(x => x >= 0))
+        // if (!_shootAblePlaces.Any(x => x >= 0))
+        // {
+        //     return GamePlayState.Lose;
+        // }
+        GamePlayState result = GamePlayState.Idle;
+        // for (int i = 0; i < ConstData.ROW_BLOCKS; i++)
+        // {
+        //     for (int j = 0; j < ConstData.COL_BLOCKS; j++)
+        //     {
+        //         if (stackBlocks[i, j].GetTotalBlocks() > 0)
+        //         {
+        //             result = GamePlayState.Idle;
+        //         }
+        //     }
+        // }
+        return _processingActionNumber > 0 ? GamePlayState.Processing : result;
+    }
+
+    private StackBlock GetStackToPush(int row, int col)
+    {
+        //Check higher stack
+        col++;
+        for (int i = col; i < ConstData.COL_BLOCKS; i++)
         {
-            return GamePlayState.Lose;
-        }
-        GamePlayState result = GamePlayState.Win;
-        for (int i = 0; i < ConstData.ROW_BLOCKS; i++)
-        {
-            for (int j = 0; j < ConstData.COL_BLOCKS; j++)
+            if (!stackBlocks[row, i].CheckContainObstacle())
             {
-                if (stackBlocks[i, j].GetTotalBlocks() > 0)
-                {
-                    result = GamePlayState.Idle;
-                }
+                return stackBlocks[row, i];
             }
         }
-        return _processingActionNumber > 0 ? GamePlayState.Processing : result;
+        return null;
     }
 #endregion
 

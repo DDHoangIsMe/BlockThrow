@@ -8,11 +8,16 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
 {
     // Current color state of the block
     private BlockColor _colorType;
+    // Get all IGameObject assigned class
     private Type[] types = Assembly
             .GetExecutingAssembly()
             .GetTypes()
             .Where(t => typeof(IGameObject).IsAssignableFrom(t) && t.IsClass)
             .ToArray();
+
+    private List<List<GameObject>> _allList = new List<List<GameObject>>();
+
+    // Color Property
     public BlockColor ColorType
     {
         get { return _colorType; }
@@ -25,8 +30,6 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
         }
     }
     
-    private List<List<GameObject>> _allList = new List<List<GameObject>>();
-
     void Awake()
     {
         foreach (Type item in types) 
@@ -42,27 +45,21 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
     //Method logicaly add more block from other stack
     public abstract void AddBlock<T>(T otherStack) where T : AbstractStackBlock;
 
+    //Method on change UI
+    public abstract void UpdateStackUI();
+
     protected virtual void OnAwake()
     {
         //Act as Awake
     }
 
     //Create object block
-    public virtual void SpawnBlock(int amount) 
+    public virtual void SpawnBlock(int amount, BlockColor color) 
     {
         // create new blocks
-        for (int i = 0; i < amount; i++)
-        {
-            GameObject block = PoolManage.Instance.GetObject<Block>();
-            // block.transform.parent = this.transform;
-            GetListObject<Block>().Add(block);
-        }
+        SpawnObject<Block>(amount);
+        ColorType = color;
         OrderBlocks();
-    }
-
-    public virtual void SpawnObject<T>() where T : IGameObject
-    {
-        
     }
 
     //Place blocks in places
@@ -71,6 +68,17 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
         {
             //Todo: Animation ordering blocks
             GetListObject<Block>()[i].transform.position = transform.position + Vector3.up * i * ConstData.GASP_BLOCK;
+        }
+    }
+
+    //Create object
+    public void SpawnObject<T>(int amount = 1) where T : IGameObject
+    {
+        // Create obj
+        for (int i = 0; i < amount; i++)
+        {
+            GameObject obj = PoolManage.Instance.GetObject<T>();
+            GetListObject<T>().Add(obj);
         }
     }
 
@@ -83,7 +91,6 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
     public void DestroyBlock()
     {
         List<GameObject> tempList = GetListObject<Block>();
-        Debug.Log(tempList.Count);
         foreach (GameObject item in tempList)
         {
             item.SetActive(false);
