@@ -1,11 +1,14 @@
 using UnityEngine;
+using UnityEngine.Analytics;
 using UnityEngine.EventSystems;
 
-public class DragHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDragHandler
+public class DragHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
 {
     public RectTransform invisiblePanel;
     public Transform targetObject;
     public Camera mainCamera;
+
+    private bool _isControlTarget = false;
 
     public void OnPointerDown(PointerEventData eventData)
     {
@@ -17,16 +20,22 @@ public class DragHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IEn
         MoveObject(eventData);
     }
 
-    public void OnEndDrag(PointerEventData eventData)
+    public void OnPointerUp(PointerEventData eventData)
     {
-        if (!targetObject.GetComponent<StackBlockShooter>().IsDragable())
+        if (!RectTransformUtility.RectangleContainsScreenPoint(invisiblePanel, eventData.position, null))
         {
-            return;
+            //When mouse of of panel
         }
-        else
+        else if (!targetObject.GetComponent<StackBlockShooter>().IsDragable())
         {
+            //Other action are processing
+        }
+        else if (_isControlTarget)
+        {
+            //Trigger shooter action
             targetObject.GetComponent<StackBlockShooter>().ActionEndDrag();
         }
+        _isControlTarget = false;
     }
 
     private void MoveObject(PointerEventData eventData)
@@ -38,6 +47,7 @@ public class DragHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IEn
         Vector2 localPoint;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(invisiblePanel, eventData.position, mainCamera, out localPoint))
         {
+            _isControlTarget = true;
             // Convert local point to world space and keep the object within the panel
             Vector3 worldPoint = invisiblePanel.transform.TransformPoint(localPoint);
             Rect panelRect = invisiblePanel.rect;

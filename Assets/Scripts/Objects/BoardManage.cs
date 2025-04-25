@@ -4,15 +4,6 @@ using System.Collections;
 using System.Linq;
 using UnityEngine;
 
-public enum GamePlayState
-{
-    Idle,
-    Processing,
-    Win,
-    Lose,
-    None
-}
-
 public class BoardManage : MonoBehaviour
 {
     [SerializeField]
@@ -35,12 +26,16 @@ public class BoardManage : MonoBehaviour
     void Awake()
     {
         stackBlocks = new StackBlock[ConstData.ROW_BLOCKS, ConstData.COL_BLOCKS];
+
         //Board setup
         GenerateNewBoard();
         GenerateShootPlaceHolder();
         MarkShootablePlace();
         MarkPlace();
+    }
 
+    void Start()
+    {
         //Shooter setup
         if (_stackBlockShooter == null)
         {
@@ -56,25 +51,19 @@ public class BoardManage : MonoBehaviour
         {
             for (int j = 0; j < ConstData.COL_BLOCKS; j++)
             {
-                stackBlocks[i, j] = new GameObject().AddComponent<StackBlock>();
+                stackBlocks[i, j] = PoolManage.Instance.GetObject<StackBlock>().GetComponent<StackBlock>();
                 stackBlocks[i, j].transform.parent = transform;
+
                 // Set position the board 
                 stackBlocks[i, j].transform.position = GetGridPosition(i, j);
                 if (j == 0)
                 {
                     continue;
                 }
+                
                 //randomize block amount
                 // Todo: Don't use random, use game play data
-                if (j == 2)
-                {
-                    stackBlocks[i, j].SpawnBlock(0);
-                }
-                else
-                {
-                    stackBlocks[i, j].SpawnBlock(UnityEngine.Random.Range(ConstData.MIN_BLOCKS, ConstData.MAX_BLOCKS));
-                }
-                
+                stackBlocks[i, j].SpawnBlock(UnityEngine.Random.Range(ConstData.MIN_BLOCKS, ConstData.MAX_BLOCKS));
 
                 //Randomize block color
                 stackBlocks[i, j].ChangeColor(
@@ -95,12 +84,7 @@ public class BoardManage : MonoBehaviour
     {
         for (int i = 0; i < ConstData.ROW_BLOCKS; i++)
         {
-            if (stackBlocks[i, 0].GetTotalBlocks() > 0)
-            {
-                // Set invalid value
-                _shootAblePlaces[i] = ConstData.NEGATIVE_ONE;
-            }
-            for (int j = 1; j < ConstData.COL_BLOCKS; j++)
+            for (int j = 0; j < ConstData.COL_BLOCKS; j++)
             {
                 if (stackBlocks[i, j] == null)
                 {
@@ -109,25 +93,10 @@ public class BoardManage : MonoBehaviour
                 }
                 else if (stackBlocks[i, j].GetTotalBlocks() == 0)
                 {
-                    if (_shootAblePlaces[i] == ConstData.NEGATIVE_ONE)
-                    {
-                        _shootAblePlaces[i] = 0;
-                        break;
-                    }
-                    //Last loop
-                    if (j == ConstData.COL_BLOCKS - 1)
-                    {
-                        _shootAblePlaces[i] = j;
-                    }
-                    continue;
+                    _shootAblePlaces[i] = j;
                 }
-                else 
+                else
                 {
-                    if (_shootAblePlaces[i] == ConstData.NEGATIVE_ONE)
-                    {
-                        continue;
-                    }
-                    _shootAblePlaces[i] = j - 1; // choose the right below this block 
                     break;
                 }
             }
@@ -137,7 +106,7 @@ public class BoardManage : MonoBehaviour
     private void MarkPlace(bool trigger = true) {
         for (int i = 0; i < ConstData.ROW_BLOCKS; i++)
         {
-            if (_shootAblePlaces[i] > ConstData.NEGATIVE_ONE && trigger)
+            if (trigger)
             {
                 _shootPlaceHolders[i].HideObject(false);
                 _shootPlaceHolders[i].transform.position = GetGridPosition(i, _shootAblePlaces[i]);
@@ -180,38 +149,38 @@ public class BoardManage : MonoBehaviour
     public IEnumerator ShootAtPlace()
     {
         //From shooter to board
-        ShootAnimation();
-        yield return new WaitUntil(() => _processingActionNumber == 0);
-
-        //Push case
         int col = _currentShoot;
-        if (stackBlocks[col, _shootAblePlaces[col]].GetBlocks().Count > 0)
-        { 
-            PushColumn();
-        }
+        ShootToBoard();
         yield return new WaitUntil(() => _processingActionNumber == 0);
 
-        //Change Data
-        stackBlocks[col, _shootAblePlaces[col]].AddBlock(_stackBlockShooter);
+        //Fix position
+        stackBlocks[col, _shootAblePlaces[col]].OrderBlocks();
 
         //Merge case
         MergeBlockCall(col, _shootAblePlaces[col]);
         yield return new WaitUntil(() => _processingActionNumber == 0);
+
+        //Push case
+        if (_shootAblePlaces[col] == 0 && stackBlocks[col, 0].GetListObject<Block>().Count > 0)
+        {
+            PushColumn();
+            yield return new WaitUntil(() => _processingActionNumber == 0);
+
+            //Merge case
+            MergeBlockCall(col, 1); //Merge after push default at row 1
+            yield return new WaitUntil(() => _processingActionNumber == 0);
+        }
 
         //Next action
         _gamePlayState = CheckClearBoard();
         HandlerGame();
     }
 
-    private void ShootAnimation()
+    private void ShootToBoard()
     {
-        for (int i = 0; i < _stackBlockShooter.GetBlocks().Count; i++)
-        {
-            _processingActionNumber++;
-            StackBlock tempStack = stackBlocks[_currentShoot, _shootAblePlaces[_currentShoot]];
-            Vector3 targetPos = tempStack.transform.position + Vector3.up * ConstData.GASP_BLOCK * (i + tempStack.GetBlocks().Count);
-            _stackBlockShooter.GetBlocks()[i].GetComponent<Block>().MoveStraight(targetPos, ConstData.BLOCK_SPEED, FinishProcess);
-        }
+        _processingActionNumber += _stackBlockShooter.GetListObject<Block>().Count;
+        StackBlock tempStack = stackBlocks[_currentShoot, _shootAblePlaces[_currentShoot]];
+        _stackBlockShooter.MoveToOtherStack(tempStack, ConstData.BLOCK_SPEED, FinishProcess);
     }
 
     /// <summary>
@@ -228,37 +197,33 @@ public class BoardManage : MonoBehaviour
     public IEnumerator MergeBlocks(int col, int row)
     {
         bool isMerge = false;
+
         //Check surrounding blocks
-        for (int i = col - 1; i <= col + 1; i++)
+        foreach (var item in ConstData.SUROUND_DIRECTION)
         {
-            for (int j = row - 1; j <= row + 1; j++)
+            int newRow = row + item[0];
+            int newCol = col + item[1];
+            if (newCol < 0 ||
+                newCol >= ConstData.ROW_BLOCKS ||
+                newRow < 0 ||
+                newRow >= ConstData.COL_BLOCKS ||
+                isMerge)
             {
-                //Ignore the block itself and out of bounds
-                if (
-                    (i == col && j == row) ||
-                    i < 0 ||
-                    i >= ConstData.ROW_BLOCKS ||
-                    j < 0 ||
-                    j >= ConstData.COL_BLOCKS ||
-                    isMerge
-                )
-                {
-                    continue;
-                }
-                //Merge
-                if (
-                    stackBlocks[i, j].GetTotalBlocks() > 0 && 
-                    stackBlocks[i, j].GetBlockColor() == stackBlocks[col, row].GetBlockColor()
-                )
-                {
-                    isMerge = true;
-                    stackBlocks[col, row].MoveToOtherStack(stackBlocks[i, j], ConstData.INTENSE_CURVE, ConstData.MERGE_WAIT_TIME);
-                    yield return new WaitForSeconds(ConstData.MERGE_WAIT_TIME + ConstData.REST_WAIT_TIME);
-                    MergeBlockCall(i, j);
-                    break;
-                }
+                continue;
+            }
+
+            // Merge action
+            if (stackBlocks[newCol, newRow].GetTotalBlocks() > 0 &&
+                stackBlocks[newCol, newRow].GetBlockColor() == stackBlocks[col, row].GetBlockColor())
+            {
+                isMerge = true;
+                stackBlocks[col, row].MoveToOtherStack(stackBlocks[newCol, newRow], ConstData.INTENSE_CURVE, ConstData.MERGE_WAIT_TIME);
+                yield return new WaitForSeconds(ConstData.MERGE_WAIT_TIME + ConstData.REST_WAIT_TIME);
+                MergeBlockCall(newCol, newRow);
+                break;
             }
         }
+
         _processingActionNumber--;
         if (!isMerge)
         {
@@ -266,13 +231,13 @@ public class BoardManage : MonoBehaviour
         }
     }
 
+    //
     public void PushColumn()
     {
         int order = 0;
         for (int i = 0; i < ConstData.COL_BLOCKS; i++)
         {
-            Debug.Log("Log: " + _currentShoot + " " + i);
-            if (stackBlocks[_currentShoot, i].GetBlocks().Count == 0)
+            if (stackBlocks[_currentShoot, i].GetListObject<Block>().Count == 0)
             {
                 break;
             }
@@ -281,13 +246,23 @@ public class BoardManage : MonoBehaviour
         for (int i = order; i >= 0; i--)
         {
             //Start 1 action
-            _processingActionNumber += stackBlocks[_currentShoot, i].GetBlocks().Count;
-            //Animation
-            stackBlocks[_currentShoot, i].MoveToOtherStack(stackBlocks[_currentShoot, i + 1], FinishProcess, ConstData.BLOCK_SPEED);
-            //Data change
-            stackBlocks[_currentShoot, i + 1].AddBlock(stackBlocks[_currentShoot, i]);
+            _processingActionNumber += stackBlocks[_currentShoot, i].GetListObject<Block>().Count;
+            
+            if (i + 1 == ConstData.COL_BLOCKS)
+            {
+                //Animation
+                stackBlocks[_currentShoot, i].MoveOutOfBoard(ConstData.BLOCK_SPEED, FinishProcess);
+                //Data change
+                stackBlocks[_currentShoot, i].DespawnBlock();
+            }
+            else
+            {
+                //Animation
+                stackBlocks[_currentShoot, i].MoveToOtherStack(stackBlocks[_currentShoot, i + 1], ConstData.BLOCK_SPEED, FinishProcess);
+                //Data change
+                stackBlocks[_currentShoot, i + 1].AddBlock(stackBlocks[_currentShoot, i]);
+            }
         }
-        stackBlocks[_currentShoot, 0].OrderBlocks();
     }
 #endregion
 
@@ -337,8 +312,7 @@ public class BoardManage : MonoBehaviour
     {
         //Get Column
         int order = (int)Math.Round(_stackBlockShooter.transform.position.x/ ConstData.UNIT_DISTANCE) + (ConstData.ROW_BLOCKS - 1) / 2; //Half of row number
-        order = Mathf.Clamp(order, 0, ConstData.ROW_BLOCKS);
-        return order;
+        return Mathf.Clamp(order, 0, ConstData.ROW_BLOCKS - 1);
     }
 
     private void OnShooterChangePos()

@@ -5,15 +5,20 @@ using UnityEngine;
 
 public class ObjectControl : MonoBehaviour
 {
-    public Type objectType;
     public List<GameObject> gameObjects = new List<GameObject>();
 
     private GameObject _modelObject;
 
-    public void GetTypeObj<T>() where T : IGameObject
+    public void GetTypeObj(Type type)
     {
-        objectType = typeof(T);
-        _modelObject = Resources.Load<GameObject>("Prefabs/Prefab" + objectType.Name);
+        if (typeof(IGameObject).IsAssignableFrom(type))
+        {
+            _modelObject = Resources.Load<GameObject>(ConstData.GAME_OBJECT_PREFAB_PATH + type.Name);
+        }
+        else if (typeof(IStackable).IsAssignableFrom(type))
+        {   
+            _modelObject = Resources.Load<GameObject>(ConstData.GAME_MANAGE_PREFAB_PATH + type.Name);
+        }
     }
 
     public GameObject GetObject()

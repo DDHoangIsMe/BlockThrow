@@ -6,7 +6,7 @@ public class PoolManage : Singleton<PoolManage>
 {
     private Dictionary<string, ObjectControl> _poolDictionary = new Dictionary<string, ObjectControl>();
 
-    public GameObject GetObject<T>() where T : IGameObject
+    public GameObject GetObject<T>()
     {
         string objectType = typeof(T).Name;
         if (!_poolDictionary.ContainsKey(objectType))
@@ -16,14 +16,14 @@ public class PoolManage : Singleton<PoolManage>
         return _poolDictionary[objectType].GetObject();  
     }
 
-    private void GenerateObjectControl<T>()  where T : IGameObject
+    private void GenerateObjectControl<T>()
     {
         string objectType = typeof(T).Name;
         if (!_poolDictionary.ContainsKey(objectType)) {
             GameObject controller = new GameObject(objectType + "-Control");
             controller.transform.parent = transform;
             ObjectControl poolObject = controller.AddComponent<ObjectControl>();
-            poolObject.GetTypeObj<T>();
+            poolObject.GetTypeObj(typeof(T));
             _poolDictionary.Add(objectType, poolObject);
         }
     }
