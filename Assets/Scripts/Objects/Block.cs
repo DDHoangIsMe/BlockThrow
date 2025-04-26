@@ -84,6 +84,11 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
         }
     }
 
+    public void SetLayer(int level) 
+    {
+        _blockSprite.sortingOrder = level;
+    }
+
     public void DeactiveCoroutine()
     {
         if (moveCoroutine != null)
@@ -93,6 +98,7 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
             _isMovingCurve = false;
             _isMovingPass = false;
             _isMovingStraight = false;
+            SetLayer(ConstData.BLOCK_LAYER);
         }
     }
 
@@ -104,6 +110,7 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
     public void MoveStraight(Vector3 targetPos, float speed, System.Action callback)
     {
         DeactiveCoroutine();
+        SetLayer(ConstData.MOVE_BLOCK_LAYER);
         _isMovingStraight = true;
         moveCoroutine = StartCoroutine(MoveStraightCoroutine(targetPos, speed, callback));
     }
@@ -127,6 +134,7 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
     public void MovePassOver(Vector3 targetPos, float intense, float speed)
     {
         DeactiveCoroutine();
+        SetLayer(ConstData.MOVE_BLOCK_LAYER);
         _isMovingPass = true;
         moveCoroutine = StartCoroutine(MovePassOverCoroutine(targetPos, intense, speed));
     }
@@ -154,6 +162,7 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
     public void MoveCurve(Vector3 targetPos, float intense, float duration = 0, bool isAnimation = true)
     {
         DeactiveCoroutine();
+        SetLayer(ConstData.MOVE_BLOCK_LAYER);
         _isMovingCurve = true;
         _elapsedTime = 0;
         moveCoroutine = StartCoroutine(MoveToCoroutine(targetPos, intense, duration, isAnimation));

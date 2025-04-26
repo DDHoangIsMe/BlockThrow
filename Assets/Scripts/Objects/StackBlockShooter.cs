@@ -1,9 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Unity.VisualScripting.Dependencies.NCalc;
+using TMPro;
 
 public class StackBlockShooter : AbstractStackBlock, IDragableObject
 {
+    [SerializeField]
+    private TextMeshProUGUI _textCount;
     private Vector3 _previousPos;
     private bool _isDragable = false;
 
@@ -11,6 +14,16 @@ public class StackBlockShooter : AbstractStackBlock, IDragableObject
     public delegate GamePlayState ShootStackCallback(float posX);
     public ChangePosCallback changePosCallback;
     public ShootStackCallback shootStackCallback;
+
+    protected override void OnAwake()
+    {
+        if (_textCount == null)
+        {
+            _textCount = new GameObject().AddComponent<TextMeshProUGUI>();
+            _textCount.gameObject.AddComponent<CanvasRenderer>();
+            _textCount.transform.SetParent(GameObject.Find("CanvasWorld").transform);
+        }
+    }
 
     void Start()
     {
@@ -30,9 +43,35 @@ public class StackBlockShooter : AbstractStackBlock, IDragableObject
                     ConstData.DEFAULT_SPEED * (GetListObject<Block>().Count - i)
                 );
             }
+            _textCount.transform.position = transform.position;
             _previousPos = transform.position;
             changePosCallback?.Invoke();
         }
+#region Dev_Only
+    #if UNITY_EDITOR
+        //Testing
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            ReloadShooter(1, BlockColor.Red);
+        }
+        else if (Input.GetKeyDown(KeyCode.B))
+        {
+            ReloadShooter(1, BlockColor.Blue);
+        }
+        else if (Input.GetKeyDown(KeyCode.Y))
+        {
+            ReloadShooter(1, BlockColor.Yellow);
+        }
+        else if (Input.GetKeyDown(KeyCode.G))
+        {
+            ReloadShooter(1, BlockColor.Green);
+        }
+        else if (Input.GetKeyDown(KeyCode.P))
+        {
+            ReloadShooter(1, BlockColor.Purple);
+        }
+    #endif
+#endregion
 #region Dev_Only
     #if UNITY_EDITOR
         //Testing
@@ -73,6 +112,15 @@ public class StackBlockShooter : AbstractStackBlock, IDragableObject
         block.DespawnBlock();
     }
 
+    public override void UpdateStackUI()
+    {
+        if (_textCount != null)
+        {
+            _textCount.text = GetListObject<Block>().Count.ToString();
+            _textCount.gameObject.SetActive(_isDragable);
+        }
+    }
+
     //Shoot block to other stack
     public void MoveToOtherStack<T>(T block, float speed, System.Action callBack) where T : AbstractStackBlock
     {
@@ -90,9 +138,11 @@ public class StackBlockShooter : AbstractStackBlock, IDragableObject
     public void ReloadShooter(int amount, BlockColor color)
     {
         DestroyBlock();
-        SpawnBlock(amount);
-        ColorType = color;
+        SpawnBlock(amount, color);
         _isDragable = true;
+        UpdateStackUI();
+        // SpawnObject<Block>(amount);
+        // ColorType = color;
     }
 
     public void ReloadShooter(int amount)
@@ -128,6 +178,7 @@ public class StackBlockShooter : AbstractStackBlock, IDragableObject
             return;
         }
         _isDragable = false;
+        UpdateStackUI();
     }
 
     public override void DespawnBlock()
