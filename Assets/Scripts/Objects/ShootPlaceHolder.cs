@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ShootPlaceHolder : MonoBehaviour, IGameObject, TweenHolder
+public class ShootPlaceHolder : MonoBehaviour, IGameObject, ITweenHolder
 {
     private Coroutine _tweenCoroutine;
     private Vector3 _targetScale;

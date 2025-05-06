@@ -7,7 +7,9 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
     public Coroutine moveCoroutine;
     private SpriteRenderer _blockSprite;
 
+    private Transform _currentParent;
     private Vector3 _targetPos;
+    private BlockColor _colorType;
     private float _speed;
 
     //For straight movement
@@ -20,8 +22,16 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
     private bool _isMovingCurve = false;
     private Vector3 _startPoint;
     private Vector3 _curvePos;
-    private float _duration;
-    private float _elapsedTime;
+    private float _progress;
+    private float _distance;
+
+    public BlockColor ColorType
+    {
+        get { return _colorType; }
+        protected set {     
+            _colorType = value;
+        }
+    }
 
 
     void Awake()
@@ -35,21 +45,27 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
         {
             if (_isMovingPass || _isMovingStraight)
             {
-                transform.position = Vector3.MoveTowards(transform.position, _targetPos, _speed * Time.deltaTime);
+                 transform.position = Vector3.MoveTowards(transform.position, _targetPos, _speed * Time.deltaTime);
             }
             if (_isMovingCurve)
             {
-                if (_elapsedTime < _duration)
-                {
-                    _elapsedTime += Time.deltaTime;
-                    float t = _elapsedTime / _duration;
+                float t = _progress / _distance;
 
-                    // Quadratic Bezier formula
-                    Vector3 position = Mathf.Pow(1 - t, 2) * _startPoint +
+                // Bezier Quadratic Formula
+                Vector3 position =  Mathf.Pow(1 - t, 2) * _startPoint +
                                     2 * (1 - t) * t * _curvePos +
                                     Mathf.Pow(t, 2) * _targetPos;
 
-                    transform.position = position;
+                transform.position = position;
+
+                _progress += _speed * Time.deltaTime;
+
+                if (_progress >= _distance) _progress = _distance;
+
+                // Set parent on Scene
+                if (t > 0.5f && transform.parent != _currentParent)
+                {
+                    transform.SetParent(_currentParent);
                 }
             }
         }
@@ -63,30 +79,22 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
 
     public void SetBlockColor(BlockColor color)
     {
-        // Set the block color based on the BlockColor enum
-        switch (color)
+        ColorType = color;
+        Sprite newSprite = Resources.Load<Sprite>(ConstData.BLOCK_COLOR_TEXTURE_PATH + color.ToString());
+        if (newSprite != null)
         {
-            case BlockColor.Red:
-                _blockSprite.color = Color.red;
-                break;
-            case BlockColor.Green:
-                _blockSprite.color = Color.green;
-                break;
-            case BlockColor.Blue:
-                _blockSprite.color = Color.blue;
-                break;
-            case BlockColor.Yellow:
-                _blockSprite.color = Color.yellow;
-                break;
-            case BlockColor.Purple:
-                _blockSprite.color = new Color(0.5f, 0, 0.5f); // Purple color RGB
-                break;
+            _blockSprite.sprite = newSprite;
+        }
+        else
+        {
+            // Testing zone
+            Debug.Log("Sprite input is: "+ color.ToString());
         }
     }
 
     public void SetLayer(int level) 
     {
-        _blockSprite.sortingOrder = level;
+        // _blockSprite.sortingOrder = level;
     }
 
     public void DeactiveCoroutine()
@@ -134,21 +142,23 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
     public void MovePassOver(Vector3 targetPos, float intense, float speed)
     {
         DeactiveCoroutine();
-        SetLayer(ConstData.MOVE_BLOCK_LAYER);
-        _isMovingPass = true;
         moveCoroutine = StartCoroutine(MovePassOverCoroutine(targetPos, intense, speed));
+        _isMovingPass = true;
     }
 
     private IEnumerator MovePassOverCoroutine(Vector3 targetPos, float intense, float speed)
     {
-        this._speed = speed + Vector3.Distance(transform.position, targetPos) * ConstData.BLOCK_SPEED;
-        this._targetPos = targetPos + (targetPos - transform.position) * intense;
+        //Setup move for block
+        _speed = speed + Vector3.Distance(transform.position, targetPos) * ConstData.BLOCK_SPEED;
+        _targetPos = targetPos + (targetPos - transform.position) * intense;
 
-        yield return new WaitUntil(() => Vector3.Distance(transform.position, this._targetPos) < ConstData.OFF_SET);
-        this._targetPos = targetPos;
+        //Wait till block move
+        yield return new WaitUntil(() => Vector3.Distance(transform.position, _targetPos) < ConstData.OFF_SET);
+        _targetPos = targetPos;
 
-        yield return new WaitUntil(() => Vector3.Distance(transform.position, this._targetPos) < ConstData.OFF_SET);
+        yield return new WaitUntil(() => Vector3.Distance(transform.position, _targetPos) < ConstData.OFF_SET);
         transform.position = targetPos;
+
         DeactiveCoroutine();
     }
     
@@ -158,20 +168,28 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
     /// <param name="targetPos">End point</param>
     /// <param name="intense">Curve path</param>
     /// <param name="duration">Time animation</param>
-    /// <param name="isAnimation">Trigger</param>
-    public void MoveCurve(Vector3 targetPos, float intense, float duration = 0, bool isAnimation = true)
+    /// <param name="callBack">Trigger</param>
+    public void MoveCurve(StackBlock senderStack, Transform parent, Vector3 targetPos, float intense, float speed, float delay, System.Action<BlockMoveState, StackBlock> callBack)
     {
         DeactiveCoroutine();
-        SetLayer(ConstData.MOVE_BLOCK_LAYER);
-        _isMovingCurve = true;
-        _elapsedTime = 0;
-        moveCoroutine = StartCoroutine(MoveToCoroutine(targetPos, intense, duration, isAnimation));
+        _currentParent = parent;
+        SetLayer(ConstData.MOVE_BLOCK_LAYER); //Todo: change SetLayer from block to all stack
+        _progress = 0;
+        moveCoroutine = StartCoroutine(MoveToCoroutine(senderStack, targetPos, intense, speed, callBack));
+        Invoke(nameof(SetMovingCurve), delay);
     }
-    private IEnumerator MoveToCoroutine(Vector3 targetPos, float intense, float duration, bool isAnimation)
+
+    private void SetMovingCurve()
     {
-        this._duration = isAnimation ? duration : 0;
-        this._targetPos = targetPos;
-        this._startPoint = transform.position;
+        _isMovingCurve = true;
+    }
+
+    private IEnumerator MoveToCoroutine(StackBlock senderStack, Vector3 targetPos, float intense, float speed, System.Action<BlockMoveState, StackBlock> callBack)
+    {
+        _targetPos = targetPos;
+        _startPoint = transform.position;
+        _distance = Vector3.Distance(_startPoint, _targetPos);
+        _speed = speed;
         Vector3 normDirection = (targetPos - transform.position).normalized;
         if (Mathf.Sign(Vector3.Dot(normDirection, Vector3.right)) > 0)
         {
@@ -182,8 +200,10 @@ public class Block : MonoBehaviour, IGameObject, IMoveWithPassOver, IMoveWithCur
             normDirection.x = -normDirection.x;
         }
         _curvePos = (targetPos + transform.position) / 2 + new Vector3(normDirection.y, normDirection.x, 0) * intense;
-        yield return new WaitForSeconds(duration);
+        yield return new WaitUntil(() => Vector3.Distance(transform.position, _targetPos) < ConstData.OFF_SET);
         transform.position = targetPos;
+        callBack(BlockMoveState.MergeDone, senderStack);
+        _currentParent = null;
         DeactiveCoroutine();
     }
 }

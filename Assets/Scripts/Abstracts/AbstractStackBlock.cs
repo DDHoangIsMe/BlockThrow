@@ -6,8 +6,6 @@ using System;
 
 public abstract class AbstractStackBlock : MonoBehaviour, IStackable
 {
-    // Current color state of the block
-    private BlockColor _colorType;
     // Get all IGameObject assigned class
     private Type[] types = Assembly
             .GetExecutingAssembly()
@@ -20,13 +18,13 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
     // Color Property
     public BlockColor ColorType
     {
-        get { return _colorType; }
-        protected set { 
-            _colorType = value; 
-            foreach (var block in GetListObject<Block>())
+        get {
+            GameObject tempObj = GetListObject<Block>()?.LastOrDefault();
+            if (tempObj == null)
             {
-                block.GetComponent<Block>().SetBlockColor(_colorType); // Set the color of each block
+                return BlockColor.None;
             }
+            return tempObj.GetComponent<Block>().ColorType;
         }
     }
     
@@ -40,10 +38,17 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
     }
 
     //Method leave all the block out of this Stack
-    public abstract void DespawnBlock();
+    public abstract void DespawnBlock(int amount = -1);
 
     //Method logicaly add more block from other stack
     public abstract void AddBlock<T>(T otherStack) where T : AbstractStackBlock;
+    public virtual void AddBlock<T>(T block, bool isMerge = true) where T : AbstractStackBlock
+    {
+        if (isMerge)
+        {
+            AddBlock(block);
+        }
+    }
 
     //Method on change UI
     public abstract void UpdateStackUI();
@@ -58,7 +63,12 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
     {
         // create new blocks
         SpawnObject<Block>(amount);
-        ColorType = color;
+        List<GameObject> temp = GetListObject<Block>();
+        for (int i = temp.Count - amount; i < temp.Count; i++)
+        {
+            temp[i].GetComponent<Block>().SetBlockColor(color);
+        }
+
         OrderBlocks();
     }
 
@@ -72,16 +82,21 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
     }
 
     //Create object
-    public void SpawnObject<T>(int amount = 1) where T : IGameObject
+    public void SpawnObject<T>(int amount = 1, bool isParent = true) where T : IGameObject
     {
         // Create obj
         for (int i = 0; i < amount; i++)
         {
             GameObject obj = PoolManage.Instance.GetObject<T>();
             GetListObject<T>().Add(obj);
+            if (isParent)
+            {
+                obj.transform.SetParent(transform);
+            }
         }
     }
 
+    //Get Method
     public List<GameObject> GetListObject<T>() where T : IGameObject
     {
         return _allList[Array.IndexOf(types, typeof(T))];
@@ -97,4 +112,6 @@ public abstract class AbstractStackBlock : MonoBehaviour, IStackable
         }
         DespawnBlock();
     }
+
+    // protected 
 }

@@ -1,11 +1,14 @@
 
 public enum BlockColor
 {
+    None,
     Red,
     Green,
     Blue,
     Yellow,
-    Purple
+    Purple,
+    DarkGreen,
+    Brown
 }
 
 public enum ObjectType

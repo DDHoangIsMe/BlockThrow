@@ -7,7 +7,7 @@ interface IMoveObject
 
 interface IMoveWithCurve
 {
-    public void MoveCurve(Vector3 target, float intense, float duration, bool isAnimation);
+    public void MoveCurve(StackBlock senderStack, Transform parent, Vector3 target, float intense, float speed, float delay, System.Action<BlockMoveState, StackBlock> callback);
 }
 
 interface IMoveWithPassOver

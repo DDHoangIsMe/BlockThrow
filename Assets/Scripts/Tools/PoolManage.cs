@@ -27,4 +27,13 @@ public class PoolManage : Singleton<PoolManage>
             _poolDictionary.Add(objectType, poolObject);
         }
     }
+
+    public GameObject GetObjectControl<T>()
+    {
+        if (_poolDictionary.ContainsKey(typeof(T).Name)) 
+        {
+            return _poolDictionary[typeof(T).Name].gameObject;
+        }
+        return null;
+    }
 }

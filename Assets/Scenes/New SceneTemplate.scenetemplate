@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13966, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: New SceneTemplate
+  m_EditorClassIdentifier: 
+  templateScene: {fileID: 102900000, guid: e5698709c737bd34bb46cff04989342b, type: 3}
+  templateName: Main Lobby
+  description: 
+  preview: {fileID: 10309, guid: 0000000000000000f000000000000000, type: 0}
+  dependencies: []
+  templatePipeline: {fileID: 0}
+  badge: {fileID: 2800000, guid: dffef66376be4fa480fb02b19edbe903, type: 3}
+  addToDefaults: 0
